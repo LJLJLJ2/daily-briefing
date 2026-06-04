@@ -9,6 +9,9 @@ concurrency:
   group: daily-briefing
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
