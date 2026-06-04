@@ -2,7 +2,7 @@ name: Daily AI Briefing
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0,4,10,16 * * *'
   workflow_dispatch:
 
 concurrency:
