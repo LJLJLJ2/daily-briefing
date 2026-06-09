@@ -454,10 +454,12 @@ def main():
     print(f"已写入 {OUTPUT_FILE} ({len(html)} 字符)")
 
     utc_hour = datetime.now(timezone.utc).hour
-    if utc_hour == 10 and (news or repos):
+    manual_send = os.environ.get("MANUAL_SEND_EMAIL", "")
+    should_send = (utc_hour == 10 and (news or repos)) or (manual_send == "yes")
+    if should_send:
         send_email(html)
     else:
-        print(f"[SKIP] 邮件仅在 UTC 10:00 发送 (当前 UTC {utc_hour}:00)")
+        print(f"[SKIP] 邮件仅在 UTC 10:00 发送 (当前 UTC {utc_hour}:00, manual={manual_send!r})")
 
 
 if __name__ == "__main__":

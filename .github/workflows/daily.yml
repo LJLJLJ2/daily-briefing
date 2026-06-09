@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 0,4,10,16 * * *'
   workflow_dispatch:
+    inputs:
+      send_email:
+        description: '发送邮件 (yes/no)'
+        required: false
+        default: 'yes'
 
 concurrency:
   group: daily-briefing
@@ -29,6 +34,7 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           QQ_SMTP_PASSWORD: ${{ secrets.QQ_SMTP_PASSWORD }}
+          MANUAL_SEND_EMAIL: ${{ github.event_name == 'workflow_dispatch' && inputs.send_email || '' }}
 
       - name: 提交更新
         run: |
