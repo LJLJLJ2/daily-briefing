@@ -8,9 +8,11 @@ AI 日报自动推送 — GitHub Actions 版本
 import json
 import os
 import re
+import smtplib
 import time
 import urllib.request
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+from email.mime.text import MIMEText
 
 # === 配置 ===
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
@@ -393,6 +395,37 @@ def build_html(news, repos):
 </html>"""
 
 
+# ═══ 邮件发送 ═══
+
+SMTP_CONFIG = {
+    "server": "smtp.qq.com",
+    "port": 465,
+    "sender": "1026489389@qq.com",
+    "password": os.environ.get("QQ_SMTP_PASSWORD", ""),
+    "receiver": "1026489389@qq.com",
+}
+
+
+def send_email(html):
+    if not SMTP_CONFIG["password"]:
+        print("[SKIP] QQ_SMTP_PASSWORD not set, skip email")
+        return
+    now_beijing = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    subject = f"AI 日报 · {now_beijing:%Y-%m-%d}"
+    msg = MIMEText(html, "html", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = SMTP_CONFIG["sender"]
+    msg["To"] = SMTP_CONFIG["receiver"]
+    try:
+        server = smtplib.SMTP_SSL(SMTP_CONFIG["server"], SMTP_CONFIG["port"], timeout=15)
+        server.login(SMTP_CONFIG["sender"], SMTP_CONFIG["password"])
+        server.sendmail(SMTP_CONFIG["sender"], [SMTP_CONFIG["receiver"]], msg.as_string())
+        server.quit()
+        print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] 邮件已发送")
+    except Exception as e:
+        print(f"[WARN] 邮件发送失败: {e}")
+
+
 # ═══ 主流程 ═══
 
 def main():
@@ -419,6 +452,12 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"已写入 {OUTPUT_FILE} ({len(html)} 字符)")
+
+    utc_hour = datetime.now(timezone.utc).hour
+    if utc_hour == 10 and (news or repos):
+        send_email(html)
+    else:
+        print(f"[SKIP] 邮件仅在 UTC 10:00 发送 (当前 UTC {utc_hour}:00)")
 
 
 if __name__ == "__main__":
